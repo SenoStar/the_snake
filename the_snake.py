@@ -61,8 +61,7 @@ class Apple(GameObject):
     def randomize_position(self):
         """Меняет положение яблока на случайное"""
         apple_weight = randint(0, 31) * GRID_SIZE
-        # apple_height = randint(0, 23) * GRID_SIZE
-        apple_height = randint(12, 12) * GRID_SIZE
+        apple_height = randint(0, 23) * GRID_SIZE
         self.position = (apple_weight, apple_height)
 
     def draw(self):
