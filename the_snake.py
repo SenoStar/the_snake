@@ -1,9 +1,9 @@
-from random import choice, randrange
+from random import choice, randrange, randint
 
 import pygame
 
 # Константы для размеров поля и сетки:
-SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
+SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 GRID_SIZE = 20
 GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
 GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
@@ -23,6 +23,15 @@ BORDER_COLOR = (93, 216, 228)
 
 # Цвет яблока
 APPLE_COLOR = (255, 0, 0)
+
+# Золотое яблоко
+GOLD_APPLE_COLOR = (255, 255, 0)
+
+# Цвет какахи
+SHIT_COLOR = (150, 75, 0)
+
+# Цвет камня
+STONE_COLOR = (144, 144, 144)
 
 # Цвет змейки
 SNAKE_COLOR = (0, 255, 0)
@@ -61,13 +70,64 @@ class Apple(GameObject):
         self.randomize_position()
         self.body_color = APPLE_COLOR
 
+    def randomize_type(self):
+        """Тип яблока"""
+        chance_gold_apple = randint(1, 15)
+        if chance_gold_apple == 1:
+            self.body_color = GOLD_APPLE_COLOR
+        else:
+            self.body_color = APPLE_COLOR
+
     def randomize_position(self):
         """Меняет положение яблока на случайное"""
+        self.randomize_type()
         # randint -> randrange
         apple_weight = randrange(0, SCREEN_WIDTH - GRID_SIZE, GRID_SIZE)
         # randint -> randrange
         apple_height = randrange(0, SCREEN_HEIGHT - GRID_SIZE, GRID_SIZE)
         self.position = (apple_weight, apple_height)
+
+
+class Shit(GameObject):
+    """Дочерний класс (какаха)"""
+
+    def __init__(self):
+        self.position = None
+        self.body_color = SHIT_COLOR
+
+    def randomize_spawn(self):
+        """Шанс какахи"""
+        return randint(1, 2)
+
+    def randomize_position(self):
+        """Меняет положение какахи на случайное"""
+        if self.randomize_spawn() == 1:
+            shit_weight = randrange(0, SCREEN_WIDTH - GRID_SIZE, GRID_SIZE)
+            shit_height = randrange(0, SCREEN_HEIGHT - GRID_SIZE, GRID_SIZE)
+            self.position = (shit_weight, shit_height)
+        elif self.position:
+            self.position = None
+
+
+class Stone(GameObject):
+    """Дочерний класс (камень)"""
+
+    def __init__(self):
+        self.position = None
+        self.body_color = STONE_COLOR
+
+    def randomize_spawn(self):
+        """Шанс камня"""
+        return randint(1, 5)
+
+    def randomize_position(self):
+        """Меняет положение камня на случайное"""
+        if self.randomize_spawn() == 1:
+            stone_weight = randrange(0, SCREEN_WIDTH - GRID_SIZE, GRID_SIZE)
+            stone_height = randrange(0, SCREEN_HEIGHT - GRID_SIZE, GRID_SIZE)
+            self.position = (stone_weight, stone_height)
+        elif self.position:
+            self.position = None
 
 
 class Snake(GameObject):
@@ -141,6 +201,8 @@ def handle_keys(game_object):
             pygame.quit()
             raise SystemExit
         elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                pygame.quit()
             game_object.next_direction = directions.get(
                 (event.key, game_object.direction)
             )
@@ -151,6 +213,8 @@ def main():
     pygame.init()
     apple = Apple()
     snake = Snake()
+    shit = Shit()
+    stone = Stone()
 
     while True:
         screen.fill(BOARD_BACKGROUND_COLOR)
@@ -158,9 +222,26 @@ def main():
         handle_keys(snake)
         snake.move()
         if snake.get_head_position() == apple.position:
-            snake.length += 1
+            if apple.body_color == APPLE_COLOR:
+                snake.length += 1
+            else:
+                snake.length += 5
             while apple.position in snake.positions:
                 apple.randomize_position()
+            if snake.length > 5:
+                shit.randomize_position()
+                stone.randomize_position()
+        if snake.get_head_position() == shit.position:
+            snake.length -= 5
+            del snake.positions[-5:]
+            shit.position = None
+        if snake.get_head_position() == stone.position:
+            snake.reset()
+            apple.randomize_position()
+            shit.randomize_position()
+            stone.randomize_position()
+        shit.draw() if shit.position else None
+        stone.draw() if stone.position else None
         apple.draw()
         snake.draw()
         pygame.display.update()
